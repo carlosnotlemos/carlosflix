@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Player HLS Dinâmico</title>
+</head>
+
+<body>
+  <h1 id="title">Carregando...</h1>
+  <p id="description"></p>
+  <video id="video" controls width="800" poster="">
+    Seu navegador não suporta vídeo HTML5.
+  </video>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    // Pegue o slug do filme da query string, exemplo: player.html?slug=interestelar
+    const urlParams = new URLSearchParams(window.location.search);
+    const slug = urlParams.get('slug');
+
+    if (!slug) {
+      document.getElementById('title').innerText = 'Erro: Nenhum filme selecionado.';
+      throw new Error('Slug do filme não informado na URL');
+    }
+
+    fetch(`/api/movies/${slug}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Filme não encontrado');
+        return res.json();
+      })
+      .then(movie => {
+        document.getElementById('title').innerText = movie.title;
+        document.getElementById('description').innerText = movie.description;
+        const video = document.getElementById('video');
+        video.poster = movie.thumbnail_url;
+
+        const videoSrc = movie.video_master_url;
+
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(videoSrc);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            video.play();
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = videoSrc;
+          video.addEventListener('loadedmetadata', () => {
+            video.play();
+          });
+        }
+      })
+      .catch(error => {
+        document.getElementById('title').innerText = 'Erro ao carregar filme.';
+        console.error(error);
+      });
+  </script>
+</body>
+
+</html>
