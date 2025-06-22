@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catálogo de Filmes</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #121212;
+      color: #eee;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 20px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .movie-card {
+      background: #1e1e1e;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      user-select: none;
+    }
+
+    .movie-card:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 20px rgba(255, 140, 0, 0.8);
+    }
+
+    .movie-thumb {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border-bottom: 2px solid #ff8c00;
+      background: #333;
+    }
+
+    .movie-title {
+      padding: 10px 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #ff8c00;
+      text-shadow: 0 0 4px #ff8c00;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Catálogo de Filmes</h1>
+  <div id="moviesGrid" class="grid"></div>
+
+  <script>
+    async function fetchMovies() {
+      try {
+        const response = await fetch('/api/movies');
+        if (!response.ok) throw new Error('Erro ao buscar filmes');
+        const movies = await response.json();
+        renderMovies(movies);
+      } catch (error) {
+        console.error(error);
+        document.getElementById('moviesGrid').innerHTML = '<p>Erro ao carregar filmes.</p>';
+      }
+    }
+
+    function renderMovies(movies) {
+      const container = document.getElementById('moviesGrid');
+      container.innerHTML = '';
+
+      movies.forEach(movie => {
+        const card = document.createElement('a');
+        card.href = `player.html?slug=${movie.slug}`;
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+        card.className = 'movie-card';
+
+        const thumb = document.createElement('img');
+        thumb.src = movie.thumbnail_url;
+        thumb.alt = movie.title;
+        thumb.className = 'movie-thumb';
+
+        const title = document.createElement('div');
+        title.textContent = movie.title;
+        title.className = 'movie-title';
+
+        card.appendChild(thumb);
+        card.appendChild(title);
+        container.appendChild(card);
+      });
+    }
+
+    fetchMovies();
+  </script>
+
+</body>
+
+</html>
