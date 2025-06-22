@@ -1,62 +1,104 @@
-# Carlos Flix - Informações Essenciais para Desenvolvimento
+# 🎬 Tutorial: Codificando Vídeos em HLS com FFmpeg
 
-## Qualidade dos Filmes
-
-- **Qualidade Alta:**  
-  - Resolução: 1080p (Full HD)  
-  - Áudio: AAC estéreo, 128 kbps  
-  - Uso: Para TVs com boa conexão e qualidade máxima  
-
-- **Qualidade Baixa:**  
-  - Resolução: 480p  
-  - Áudio: AAC estéreo, 96 kbps  
-  - Uso: Para conexões lentas ou dispositivos com menor capacidade  
-
-*Obs:* As duas qualidades são entregues via streaming HLS (`.m3u8` + segmentos `.ts`), com playlist mestre para alternância automática.
+Este tutorial mostra como analisar, preparar e codificar um vídeo para streaming via HLS (HTTP Live Streaming) com qualidade de áudio e vídeo ideais.
 
 ---
 
-## Ferramentas Utilizadas
+## 📁 Pré-requisitos
 
-| Camada       | Tecnologia                           |
-|--------------|------------------------------------|
-| Backend      | Ruby on Rails                      |
-| Frontend     | BrightScript (para app Roku)        |
-| Servidor     | Ubuntu Server LTS                  |
-| Proxy/Load Balancer | Nginx                          |
-
----
-
-## Estrutura do Sistema
-
-- **Servidor de Vídeo:**  
-  - Armazena os vídeos segmentados em múltiplas qualidades no diretório `public/videos/`  
-  - Servido via Nginx, com backend Rails para API e gerenciamento
-
-- **Conversão de Vídeos:**  
-  - Usar FFmpeg para gerar múltiplas versões (1080p e 480p)  
-  - Preferência por conversão na máquina principal, com envio para servidor, para minimizar carga
-
-- **Streaming:**  
-  - Utiliza protocolo HLS para entregar vídeos em segmentos pequenos, garantindo melhor adaptação à largura de banda
-
-- **Player Roku:**  
-  - Desenvolvido em BrightScript, consome a playlist mestre `.m3u8` para alternar automaticamente entre qualidades conforme rede
+- `ffmpeg` e `ffprobe` instalados
+- Estrutura de diretório no projeto:
+  ```
+  public/videos/NOME_DO_FILME/1080p/
+  ```
 
 ---
 
-## Armazenamento Estimado
+## 📌 1. Verificar informações do vídeo e áudio
 
-| Espaço em Disco | Quantidade Aproximada de Filmes (2h cada, 1080p + 480p) |
-|-----------------|---------------------------------------------------------|
-| 1 TB            | ~450 a 590 filmes                                       |
-| 500 GB          | ~225 a 295 filmes                                       |
+### 🎥 Informações do Vídeo
+
+```bash
+ffprobe -v error -select_streams v:0 \
+  -show_entries stream=codec_name,profile,bit_rate,width,height \
+  -of default=noprint_wrappers=1 \
+  "SEU_VIDEO.mkv"
+```
+
+### 🔊 Informações do Áudio
+
+```bash
+ffprobe -v error -select_streams a:0 \
+  -show_entries stream=codec_name,channels,bit_rate \
+  -of default=noprint_wrappers=1 \
+  "SEU_VIDEO.mkv"
+```
+
+### 📊 Bitrate total (média)
+
+```bash
+ffprobe -v error -select_streams v:0 \
+  -show_entries format=bit_rate \
+  -of default=noprint_wrappers=1:nokey=1 \
+  "SEU_VIDEO.mkv"
+```
 
 ---
 
-## Recomendações Gerais
+## 📂 2. Criar a pasta de saída
 
-- Utilize SSD para melhor desempenho no servidor, especialmente para leitura rápida dos segmentos  
-- Separe diretórios temporários para upload e conversão, evitando impactar streaming em andamento  
-- Configure FFmpeg para balancear qualidade e tamanho, com CRF adequado (ex: 26 para 1080p)  
-- Crie playlists mestre para oferecer múltiplas qualidades e garantir melhor experiência ao usuário
+```bash
+mkdir -p public/videos/NOME_DO_FILME/1080p
+cd public/videos/NOME_DO_FILME
+```
+
+---
+
+## ⚙️ 3. Codificar vídeo para HLS com áudio normalizado
+
+```bash
+ffmpeg -i /caminho/para/SEU_VIDEO.mkv \
+  -c:v libx264 -crf 18 -preset veryfast \
+  -profile:v main -level 4.0 \
+  -c:a aac -b:a 192k -af loudnorm \
+  -hls_time 10 \
+  -hls_playlist_type vod \
+  -hls_segment_filename "1080p/index_%03d.ts" \
+  1080p/index.m3u8
+```
+
+> 🎧 O filtro `-af loudnorm` normaliza o volume do áudio para evitar picos altos ou partes muito baixas.
+
+---
+
+## 📄 4. Criar o arquivo `master.m3u8`
+
+Crie um arquivo chamado `master.m3u8` dentro da pasta do filme com o seguinte conteúdo:
+
+```m3u8
+#EXTM3U
+#EXT-X-VERSION:3
+
+# 1080p
+#EXT-X-STREAM-INF:BANDWIDTH=2300000,RESOLUTION=1920x800,CODECS="avc1.64001f,mp4a.40.2"
+1080p/index.m3u8
+```
+
+> 💡 Use o valor de `BANDWIDTH` com base no bitrate total aproximado do vídeo + áudio (em bps).
+
+---
+
+## ✅ 5. Estrutura final esperada
+
+```
+public/videos/matrix_1999/
+├── master.m3u8
+├── thumbnail.jpeg
+└── 1080p/
+    ├── index.m3u8
+    ├── index_000.ts
+    ├── index_001.ts
+    └── ...
+```
+
+Agora seu vídeo está pronto para ser servido por streaming HLS!
