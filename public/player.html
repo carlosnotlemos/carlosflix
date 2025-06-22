@@ -3,24 +3,59 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>Player HLS Dinâmico</title>
+  <title>Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      background-color: #000;
+      color: #fff;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    .video-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #000;
+    }
+
+    video {
+      max-width: 100%;
+      max-height: 100%;
+      background: #000;
+    }
+  </style>
 </head>
 
 <body>
-  <h1 id="title">Carregando...</h1>
-  <p id="description"></p>
-  <video id="video" controls width="800" poster="">
-    Seu navegador não suporta vídeo HTML5.
-  </video>
+  <div class="video-container">
+    <video id="video" controls autoplay poster="">
+      Seu navegador não suporta vídeo HTML5.
+    </video>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script>
-    // Pegue o slug do filme da query string, exemplo: player.html?slug=interestelar
     const urlParams = new URLSearchParams(window.location.search);
     const slug = urlParams.get('slug');
 
     if (!slug) {
-      document.getElementById('title').innerText = 'Erro: Nenhum filme selecionado.';
+      alert("Erro: Nenhum filme selecionado.");
       throw new Error('Slug do filme não informado na URL');
     }
 
@@ -30,8 +65,6 @@
         return res.json();
       })
       .then(movie => {
-        document.getElementById('title').innerText = movie.title;
-        document.getElementById('description').innerText = movie.description;
         const video = document.getElementById('video');
         video.poster = movie.thumbnail_url;
 
@@ -52,8 +85,8 @@
         }
       })
       .catch(error => {
-        document.getElementById('title').innerText = 'Erro ao carregar filme.';
         console.error(error);
+        alert('Erro ao carregar filme.');
       });
   </script>
 </body>
