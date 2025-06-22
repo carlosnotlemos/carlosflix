@@ -9,9 +9,6 @@ class Api::MoviesController < ApplicationController
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Filme não encontrado" }, status: :not_found
   end
-  def new; end
-  def edit; end
-  def update; end
 
   def create
     ActiveRecord::Base.transaction do
@@ -24,6 +21,9 @@ class Api::MoviesController < ApplicationController
     end
   end
 
+  def new; end
+  def edit; end
+  def update; end
   def destroy; end
 
   private
